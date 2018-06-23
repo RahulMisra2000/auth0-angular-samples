@@ -9,6 +9,9 @@ import * as auth0 from 'auth0-js';
 @Injectable()
 export class AuthService {
 
+  
+  // *********** Think of this as PRIMING the Auth0.js library so we can make API calls -----------------------------
+  // ----------------------------------------------------------------------------------------------------------------
   auth0 = new auth0.WebAuth({
     clientID: AUTH_CONFIG.clientID,
     domain: AUTH_CONFIG.domain,
@@ -17,13 +20,25 @@ export class AuthService {
     redirectUri: AUTH_CONFIG.callbackURL,
     scope: 'openid profile email'                         // The scopes we would like to receive in the idToken
   });
-
+  // ----------------------------------------------------------------------------------------------------------------
+  
+  
   userProfile: any;
 
   constructor(public router: Router) {}
 
   public login(): void {
-    this.auth0.authorize();
+    this.auth0.authorize();                             // This API gets the authentication process rolling ...
+                                                        // Takes the browser from our SPA to https://domain/authorize ENDPOINT
+                                                        // Then redirects to https://domain/login ENDPOINT
+                                                        // Then the login widget appears
+                                                        // Then a number of things can happen depending on whether social media provider
+                                                        // is clicked or username/pwd is provided to go against Auth0 database, etc
+                                                        // Ultimately Auth0 REDIRECTS to the callback URL which is in our SPA
+                                                        // This kicks off the SPA again.....
+                                                        // In the hash fragment of the callback URL are the tokens, etc. which
+                                                        // we get extracted by using .parseHash() API as shown below.
+                                                        // We call it from the BootStrap component's ngOnit                                                  
   }
 
   public handleAuthentication(): void {
