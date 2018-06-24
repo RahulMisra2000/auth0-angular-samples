@@ -15,20 +15,27 @@ export class AuthService {
   auth0 = new auth0.WebAuth({
     clientID: AUTH_CONFIG.clientID,
     domain: AUTH_CONFIG.domain,
+ // We are requesting AT and IT
     responseType: 'token id_token',
-    audience: AUTH_CONFIG.apiUrl,
+ // This is the namespace url of the API configuration in the Auth0 Portal
+    audience: AUTH_CONFIG.apiUrl,       
+ // Auth0 will redirect the browser here after a successful authentication and provide goodies as hash fragment
     redirectUri: AUTH_CONFIG.callbackURL,
+ // These are the OpenId scopes and API scopes that the application is requesting from the user
+    // --------------------------------------
+    // Hence they are called REQUESTED SCOPES
     scope: this.requestedScopes
+    // --------------------------------------
   });
 
   constructor(public router: Router) {}
 
   public login(): void {
-    this.auth0.authorize();
+    this.auth0.authorize();       // This gets the Authentication Process going ...
   }
 
   public handleAuthentication(): void {
-    this.auth0.parseHash((err, authResult) => {
+    this.auth0.parseHash((err, authResult) => {     // This places all the goodies in the authResult for us to use
       if (authResult && authResult.accessToken && authResult.idToken) {
         this.setSession(authResult);
         this.router.navigate(['/home']);
@@ -46,7 +53,7 @@ export class AuthService {
       throw new Error('Access token must exist to fetch profile');
     }
 
-    const self = this;
+    const self = this;    // ****************** Very interesting
     this.auth0.client.userInfo(accessToken, (err, profile) => {
       if (profile) {
         self.userProfile = profile;
@@ -59,10 +66,14 @@ export class AuthService {
     // Set the time that the access token will expire at
     const expiresAt = JSON.stringify((authResult.expiresIn * 1000) + new Date().getTime());
 
-    // If there is a value on the `scope` param from the authResult,
-    // use it to set scopes in the session for the user. Otherwise
-    // use the scopes as requested. If no scopes were requested,
-    // set it to nothing
+    // ------------------------------------------------------------
+    // authResult.scope is the GRANTED SCOPES ... granted by Auth0
+    // ------------------------------------------------------------
+    // Granted scopes could be different from Requested Scopes because the RULES at Auth0 Portal can 
+    // change them. Read my Angular2 - Security Google document about RULES
+    // If GRANTED SCOPES is empty that means Auth0 gave us all the REQUESTED SCOPES so, use the REQUESTED SCOPES 
+    // If GRANTED SCOPES has something then, it means that Auth0 did an override so, use the GRANTED SCOPES
+    // That is how Auth0's logic is
     const scopes = authResult.scope || this.requestedScopes || '';
 
     localStorage.setItem('access_token', authResult.accessToken);
