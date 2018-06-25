@@ -13,17 +13,40 @@ export class AuthService {
   requestedScopes: string = 'openid profile read:messages write:messages';
 
   auth0 = new auth0.WebAuth({
-    clientID: AUTH_CONFIG.clientID,
+    // This points to the developers' subdomain at Auth0 ...Each subscription(aka tenant) to Auth0 gets a subdomain of auth0.com
+    // e.g. https://companyx.auth0.com
     domain: AUTH_CONFIG.domain,
- // We are requesting AT and IT
+    
+    // This points to the Application Settings that have been created by the developer at the Auth0 portal
+    // A developer can configure multiple applications settings under the above domain
+    // Each Application (e.g Angular SPA) a developer codes is being pointed to a specific application settings at Auth0 portal
+    clientID: AUTH_CONFIG.clientID,
+    
+    // Here we are telling Auth0 which FLOW we are interested in .... We are requesting AT and IT tokens
+    // When you request token (means requesting AT) and id_token (means requesting IT) -- it is IMPLICIT GRANT FLOW
     responseType: 'token id_token',
- // This is the namespace url of the API configuration in the Auth0 Portal
-    audience: AUTH_CONFIG.apiUrl,       
- // Auth0 will redirect the browser here after a successful authentication and provide goodies as hash fragment
+    
+    // This is the namespace url of the API settings in the Auth0 Portal      
+    // This points to the API Settings that have been created by the developer at the Auth0 portal
+    // A developer can configure multiple API settings under the above domain
+    audience: AUTH_CONFIG.apiUrl,           
+    
+    // We are requesting Auth0 to redirect the browser to this url after a successful authentication and provide 
+    // goodies - AT, GRANTED scope, IT, idTokenPayload, ExpiresIn - as hash fragment
     redirectUri: AUTH_CONFIG.callbackURL,
- // These are the OpenId scopes and API scopes that the application is requesting from the user
+    
+    // These are the OpenId scopes and API scopes that the application is REQUESTING from the user AND if user OKs during the 
+    // authentication flow then
+    // the same are REQUESTED behind the scenes from Auth0. By default, Auth0 always agrees and provides it UNLESS we write RULES at 
+    // Auth0 portal. These RULES based on TONS of info it receives about the user and even from external sources can 
+    // deny the entire Authentication (even if the user's credentials were good). In such case the user will see an error message
+    // on the UI of the login screen and the authentication flow will stop because no tokens are sent to the browser.
+    // If the rules approve the authentication (this is the default) they can still modify the AT and IT payload because they
+    // have access to the AT and IT tokens. They can do CRUD on the claims that are inside the AT and IT and they can also change 
+    // the scope inside the AT. Basically, the RULES get a crack at at the AT and IT before they are sent down to the browser.
+    // **** So, what the browser receives inside the goodies is the GRANTED stuff and this may be different from the REQUESTED stuff *******
     // --------------------------------------
-    // Hence they are called REQUESTED SCOPES
+    // Hence these are the REQUESTED SCOPES
     scope: this.requestedScopes
     // --------------------------------------
   });
@@ -53,7 +76,7 @@ export class AuthService {
       throw new Error('Access token must exist to fetch profile');
     }
 
-    const self = this;    // ****************** Very interesting
+    const self = this;    // ****************** Very interestin
     this.auth0.client.userInfo(accessToken, (err, profile) => {
       if (profile) {
         self.userProfile = profile;
