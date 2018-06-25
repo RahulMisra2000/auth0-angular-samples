@@ -26,9 +26,11 @@ export class AuthService {
     // When you request token (means requesting AT) and id_token (means requesting IT) -- it is IMPLICIT GRANT FLOW
     responseType: 'token id_token',
     
-    // This is the namespace url of the API settings in the Auth0 Portal      
-    // This points to the API Settings that have been created by the developer at the Auth0 portal
-    // A developer can configure multiple API settings under the above domain
+    // This is the namespace url identifier the developer creates at the Auth0 portal (under API menu) to REPRESENT the real API that is 
+    // coded in the Resource Serve. It is JUST an identifier and does NOT point to any real url **********
+    // The API scopes are created at the Auth0 Portal under this namespace url 
+    // A developer can configure multiple API identifiers under the above domain
+    // Here we are telling which API identifier to use
     audience: AUTH_CONFIG.apiUrl,           
     
     // We are requesting Auth0 to redirect the browser to this url after a successful authentication and provide 
@@ -37,11 +39,13 @@ export class AuthService {
     
     // These are the OpenId scopes and API scopes that the application is REQUESTING from the user AND if user OKs during the 
     // authentication flow then
-    // the same are REQUESTED behind the scenes from Auth0. By default, Auth0 always agrees and provides it UNLESS we write RULES at 
-    // Auth0 portal. These RULES based on TONS of info it receives about the user and even from external sources can 
+    // the same are REQUESTED behind the scenes from Auth0 during the authentication process. By default, Auth0 always agrees and 
+    // provides it UNLESS we write RULES at Auth0 portal. 
+    
+    // These RULES based on TONS of info it receives about the user and even from external sources can 
     // deny the entire Authentication (even if the user's credentials were good). In such case the user will see an error message
     // on the UI of the login screen and the authentication flow will stop because no tokens are sent to the browser.
-    // If the rules approve the authentication (this is the default) they can still modify the AT and IT payload because they
+    // If the rules approve the authentication (this is the default) the RULES can still modify the AT and IT payload because they
     // have access to the AT and IT tokens. They can do CRUD on the claims that are inside the AT and IT and they can also change 
     // the scope inside the AT. Basically, the RULES get a crack at at the AT and IT before they are sent down to the browser.
     // **** So, what the browser receives inside the goodies is the GRANTED stuff and this may be different from the REQUESTED stuff *******
@@ -76,7 +80,7 @@ export class AuthService {
       throw new Error('Access token must exist to fetch profile');
     }
 
-    const self = this;    // ****************** Very interestin
+    const self = this;    // ********************************************* Very interesting
     this.auth0.client.userInfo(accessToken, (err, profile) => {
       if (profile) {
         self.userProfile = profile;
@@ -93,10 +97,14 @@ export class AuthService {
     // authResult.scope is the GRANTED SCOPES ... granted by Auth0
     // ------------------------------------------------------------
     // Granted scopes could be different from Requested Scopes because the RULES at Auth0 Portal can 
-    // change them. Read my Angular2 - Security Google document about RULES
+    // change the scope: inside the AT. Read my Angular2 - Security Google document about RULES
     // If GRANTED SCOPES is empty that means Auth0 gave us all the REQUESTED SCOPES so, use the REQUESTED SCOPES 
-    // If GRANTED SCOPES has something then, it means that Auth0 did an override so, use the GRANTED SCOPES
-    // That is how Auth0's logic is
+    // If GRANTED SCOPES is not empty then, it means that RULES did an override so, use the GRANTED SCOPES
+    // That is how Auth0 company has coded it 
+    
+    // Here it is saying is that if there is something in the authResult.scope then use it. 
+    // If it is empty then use the requestedScopes and if that is empty then save empty meaning no scopes were requested .. that won't
+    // happen, because we alwats request scopes
     const scopes = authResult.scope || this.requestedScopes || '';
 
     localStorage.setItem('access_token', authResult.accessToken);
@@ -122,9 +130,9 @@ export class AuthService {
     return new Date().getTime() < expiresAt;
   }
 
-  public userHasScopes(scopes: Array<string>): boolean {
+  public userHasScopes(sc: Array<string>): boolean {
     const grantedScopes = JSON.parse(localStorage.getItem('scopes')).split(' ');
-    return scopes.every(scope => grantedScopes.includes(scope));
+    return sc.every(s => grantedScopes.includes(s));
   }
 
 }
