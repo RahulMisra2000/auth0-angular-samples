@@ -19,3 +19,4 @@ export const AUTH_CONFIG: AuthConfig = {
   apiUrl: 'https://api-namespace1-on-portal'
 };
 
+
